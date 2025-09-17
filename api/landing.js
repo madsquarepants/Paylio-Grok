@@ -15,7 +15,7 @@ export default function handler(_req, res) {
   </style>
 </head><body>
   <h1>Paylio – API Console</h1>
-  <p class="muted">This page hits your API routes under <code>/api/*</code>.</p>
+  <p class="muted">This page calls your API routes under <code>/api/*</code>.</p>
 
   <div class="card">
     <div class="row">
