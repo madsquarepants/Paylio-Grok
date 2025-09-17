@@ -1,32 +1,29 @@
-import { pool, isDbEnabled, requireDb } from "./db.js";
-const express = require('express');
-const cors = require('cors');
-const authRoutes = require('./routes/authRoutes');
-const subscriptionRoutes = require('./routes/subscriptionRoutes');
-const pool = require('./config/db');
-require('dotenv').config();
+import pg from "pg";
+const { Pool } = pg;
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+export const isDbEnabled =
+  String(process.env.DISABLE_DB || "").toLowerCase() !== "true" &&
+  !!process.env.DATABASE_URL;
 
-app.use('/api/auth', authRoutes);
-app.use('/api/subscriptions', subscriptionRoutes);
+export const pool = isDbEnabled
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl:
+        String(process.env.DATABASE_SSL || "").toLowerCase() === "true"
+          ? { rejectUnauthorized: false }
+          : false,
+      max: 5,
+      idleTimeoutMillis: 30000,
+    })
+  : null;
 
-pool.query(`
-  CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS subscriptions (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    amount DECIMAL NOT NULL,
-    status VARCHAR(50) NOT NULL,
-    user_id INTEGER REFERENCES users(id)
-  );
-`).then(() => console.log('Database initialized'));
+export function requireDb(_req, res, next) {
+  if (isDbEnabled) return next();
+  return res
+    .status(503)
+    .json({ error: "Database is disabled in this environment" });
+}
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+if (!isDbEnabled) {
+  console.log("➡️  DB disabled: running with in-memory/no-DB mode");
+}
