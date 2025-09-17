@@ -1,3 +1,4 @@
+import { pool, isDbEnabled, requireDb } from "./db.js";
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
